@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import L from 'leaflet';
 import type { TerritoryCollection, SelectedTerritory } from '@/features/territories/types';
 
 // Import dynamique pour éviter les problèmes SSR avec Leaflet
@@ -59,6 +60,26 @@ export default function CartePage() {
 
   const handleTerritoryClick = (territory: SelectedTerritory) => {
     setSelectedTerritory(territory);
+
+    // Zoomer sur le territoire sélectionné
+    if (map && territories) {
+      const feature = territories.features.find(
+        f => f.properties.name === territory.name
+      );
+
+      if (feature && feature.geometry) {
+        // Créer un layer temporaire pour obtenir les bounds
+        const tempLayer = L.geoJSON(feature);
+        const bounds = tempLayer.getBounds();
+
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, {
+            padding: [80, 80],
+            maxZoom: 16 // Limite le zoom pour ne pas être trop proche
+          });
+        }
+      }
+    }
   };
 
   const handleClosePanel = () => {

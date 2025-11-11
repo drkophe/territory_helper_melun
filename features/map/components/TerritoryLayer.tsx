@@ -27,6 +27,7 @@ export default function TerritoryLayer({
   onTerritoryClick,
 }: TerritoryLayerProps) {
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     console.log('🗺️ TerritoryLayer - useEffect appelé');
@@ -101,12 +102,13 @@ export default function TerritoryLayer({
 
     console.log('✅ Territoires ajoutés au layerGroup');
 
-    // Ajuster la vue pour voir tous les territoires
+    // Ajuster la vue pour voir tous les territoires UNIQUEMENT au premier chargement
     const bounds = layerGroup.getBounds();
     console.log('📏 Bounds valides:', bounds.isValid());
-    if (bounds.isValid()) {
-      console.log('🔍 fitBounds appelé:', bounds);
+    if (bounds.isValid() && isInitialLoad.current) {
+      console.log('🔍 fitBounds appelé (premier chargement):', bounds);
       map.fitBounds(bounds, { padding: [50, 50] });
+      isInitialLoad.current = false;
     }
 
     // Cleanup
