@@ -55,7 +55,7 @@ export default function MapContainer({ onMapReady }: MapContainerProps) {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full"
+      className="w-full h-full relative z-0"
       style={{ minHeight: '500px' }}
     />
   );

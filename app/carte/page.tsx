@@ -30,6 +30,7 @@ export default function CartePage() {
   const [map, setMap] = useState<L.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hiddenTerritories, setHiddenTerritories] = useState<Set<string>>(new Set());
 
   // Charger les territoires
   useEffect(() => {
@@ -64,6 +65,18 @@ export default function CartePage() {
     setSelectedTerritory(null);
   };
 
+  const handleHideTerritory = (territoryName: string) => {
+    setHiddenTerritories(prev => new Set([...prev, territoryName]));
+  };
+
+  const handleShowTerritory = (territoryName: string) => {
+    setHiddenTerritories(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(territoryName);
+      return newSet;
+    });
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -72,6 +85,14 @@ export default function CartePage() {
       console.error('Logout error:', err);
     }
   };
+
+  // Filtrer les territoires pour exclure les masqués
+  const visibleTerritories = territories ? {
+    ...territories,
+    features: territories.features.filter(
+      feature => !hiddenTerritories.has(feature.properties.name)
+    )
+  } : null;
 
   return (
     <div className="h-screen flex flex-col">
@@ -118,7 +139,7 @@ export default function CartePage() {
           </div>
         )}
 
-        {!isLoading && !error && territories && (
+        {!isLoading && !error && territories && visibleTerritories && (
           <>
             {/* Carte */}
             <MapContainer onMapReady={setMap} />
@@ -127,7 +148,7 @@ export default function CartePage() {
             {map && (
               <TerritoryLayer
                 map={map}
-                territories={territories}
+                territories={visibleTerritories}
                 selectedTerritory={selectedTerritory}
                 onTerritoryClick={handleTerritoryClick}
               />
@@ -137,19 +158,59 @@ export default function CartePage() {
             <TerritoryInfoPanel
               territory={selectedTerritory}
               onClose={handleClosePanel}
+              onHide={handleHideTerritory}
             />
           </>
         )}
 
         {/* Statistiques en bas à gauche */}
-        {!isLoading && !error && territories && (
-          <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-4 z-10">
+        {!isLoading && !error && territories && visibleTerritories && (
+          <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-4 z-[500]">
             <p className="text-sm text-gray-600">
               <span className="font-semibold text-gray-900">
-                {territories.features.length}
+                {visibleTerritories.features.length}
               </span>{' '}
-              territoires
+              / {territories.features.length} territoires
             </p>
+            {hiddenTerritories.size > 0 && (
+              <p className="text-xs text-orange-600 mt-1">
+                {hiddenTerritories.size} masqué{hiddenTerritories.size > 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Liste des territoires masqués */}
+        {!isLoading && !error && hiddenTerritories.size > 0 && (
+          <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs z-[500]">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-900">
+                Territoires masqués
+              </h3>
+              <span className="text-xs text-gray-500">
+                {hiddenTerritories.size}
+              </span>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {Array.from(hiddenTerritories).map(name => (
+                <div
+                  key={name}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
+                  <span className="text-gray-700 truncate flex-1">{name}</span>
+                  <button
+                    onClick={() => handleShowTerritory(name)}
+                    className="text-blue-600 hover:text-blue-800 flex-shrink-0"
+                    title="Afficher"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
