@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>terr-ass-melun</name>
+    <description/>
+    <NetworkLink>
+      <name>terr-ass-melun</name>
+      <Link>
+        <href><![CDATA[https://www.google.com/maps/d/u/0/kml?forcekml=1&mid=1EyJZ3gH24VvSZEME7ZScvvvBS1b3Ngs]]></href>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>
