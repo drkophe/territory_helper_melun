@@ -9,7 +9,20 @@ export function middleware(request: NextRequest) {
   const authCookie = request.cookies.get('territory_auth');
   const isAuthenticated = authCookie?.value === 'authenticated';
   const isLoginPage = request.nextUrl.pathname === '/';
-  const isPublicRoute = isLoginPage || request.nextUrl.pathname.startsWith('/api/auth/login');
+  const isAuthApi = request.nextUrl.pathname.startsWith('/api/auth');
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
+
+  // Routes publiques : page de login et API d'auth
+  const isPublicRoute = isLoginPage || isAuthApi;
+
+  // Pour les routes API (hors auth), vérifier l'authentification mais ne pas rediriger
+  // Laisser l'API gérer l'erreur 401
+  if (isApiRoute && !isAuthApi) {
+    if (!isAuthenticated) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    }
+    return NextResponse.next();
+  }
 
   // Si non authentifié et pas sur une route publique, rediriger vers login
   if (!isAuthenticated && !isPublicRoute) {

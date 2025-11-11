@@ -117,16 +117,17 @@ export default function CartePage() {
         {!isLoading && !error && territories && (
           <>
             {/* Carte */}
-            <MapContainer onMapReady={setMap}>
-              {map && (
-                <TerritoryLayer
-                  map={map}
-                  territories={territories}
-                  selectedTerritory={selectedTerritory}
-                  onTerritoryClick={handleTerritoryClick}
-                />
-              )}
-            </MapContainer>
+            <MapContainer onMapReady={setMap} />
+
+            {/* Couche des territoires */}
+            {map && (
+              <TerritoryLayer
+                map={map}
+                territories={territories}
+                selectedTerritory={selectedTerritory}
+                onTerritoryClick={handleTerritoryClick}
+              />
+            )}
 
             {/* Panel d'information */}
             <TerritoryInfoPanel
