@@ -1,9 +1,8 @@
+/* Leaflet styles - obligatoire pour que la carte fonctionne */
+@import 'leaflet/dist/leaflet.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Leaflet styles - obligatoire pour que la carte fonctionne */
-@import 'leaflet/dist/leaflet.css';
 
 :root {
   --background: #ffffff;
