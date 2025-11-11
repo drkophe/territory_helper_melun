@@ -35,14 +35,18 @@ export default function CartePage() {
   useEffect(() => {
     async function loadTerritories() {
       try {
+        console.log('🔄 Chargement des territoires...');
         const response = await fetch('/api/territories');
+        console.log('📡 Réponse API:', response.status);
+
         if (!response.ok) {
           throw new Error('Failed to load territories');
         }
         const data = await response.json();
+        console.log('✅ Territoires chargés:', data.features?.length || 0);
         setTerritories(data);
       } catch (err) {
-        console.error('Error loading territories:', err);
+        console.error('❌ Error loading territories:', err);
         setError('Impossible de charger les territoires');
       } finally {
         setIsLoading(false);

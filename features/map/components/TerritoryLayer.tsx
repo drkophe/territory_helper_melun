@@ -29,14 +29,26 @@ export default function TerritoryLayer({
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
-    if (!map || !territories) return;
+    console.log('🗺️ TerritoryLayer - useEffect appelé');
+    console.log('   Map:', !!map);
+    console.log('   Territories:', territories?.features?.length || 0);
+
+    if (!map || !territories) {
+      console.log('⚠️ TerritoryLayer - Sortie (pas de map ou territories)');
+      return;
+    }
+
+    console.log('✨ TerritoryLayer - Création des couches pour', territories.features.length, 'territoires');
 
     // Créer un groupe de couches
     const layerGroup = L.layerGroup().addTo(map);
     layerGroupRef.current = layerGroup;
 
     // Ajouter chaque territoire
-    territories.features.forEach((feature: TerritoryFeature) => {
+    territories.features.forEach((feature: TerritoryFeature, index) => {
+      if (index === 0) {
+        console.log('📍 Premier territoire:', feature.properties.name);
+      }
       const geoJsonLayer = L.geoJSON(feature, {
         style: (feature) => {
           // Style sélectionné si c'est le territoire actuel
@@ -87,14 +99,19 @@ export default function TerritoryLayer({
       geoJsonLayer.addTo(layerGroup);
     });
 
+    console.log('✅ Territoires ajoutés au layerGroup');
+
     // Ajuster la vue pour voir tous les territoires
     const bounds = layerGroup.getBounds();
+    console.log('📏 Bounds valides:', bounds.isValid());
     if (bounds.isValid()) {
+      console.log('🔍 fitBounds appelé:', bounds);
       map.fitBounds(bounds, { padding: [50, 50] });
     }
 
     // Cleanup
     return () => {
+      console.log('🧹 TerritoryLayer - Cleanup');
       if (layerGroupRef.current) {
         layerGroupRef.current.clearLayers();
         layerGroupRef.current.remove();
