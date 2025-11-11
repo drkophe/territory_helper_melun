@@ -40,8 +40,8 @@ export default function TerritoryLayer({
 
     console.log('✨ TerritoryLayer - Création des couches pour', territories.features.length, 'territoires');
 
-    // Créer un groupe de couches
-    const layerGroup = L.layerGroup().addTo(map);
+    // Créer un groupe de couches (featureGroup permet getBounds)
+    const layerGroup = L.featureGroup().addTo(map);
     layerGroupRef.current = layerGroup;
 
     // Ajouter chaque territoire
