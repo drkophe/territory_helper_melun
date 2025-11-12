@@ -16,16 +16,26 @@ export function enrichTerritoriesWithSheets(
   kmlCollection: TerritoryCollection,
   sheetsData: TerritorySheetRow[]
 ): TerritoryCollection {
+  console.log(`📋 Merger: ${kmlCollection.features.length} territoires KML, ${sheetsData.length} lignes Sheets`);
+
   // Créer une map pour lookup rapide par code de territoire
   const sheetsMap = new Map<string, TerritorySheetRow>();
   sheetsData.forEach((row) => {
     sheetsMap.set(row.code, row);
   });
 
+  console.log('🔑 Codes Sheets (premiers 10):', Array.from(sheetsMap.keys()).slice(0, 10));
+  console.log('🔑 Codes KML (premiers 10):', kmlCollection.features.slice(0, 10).map(f => f.properties.name));
+
   // Enrichir chaque feature KML
+  let matchCount = 0;
   const enrichedFeatures = kmlCollection.features.map((feature): TerritoryFeature => {
     const territoryName = feature.properties.name;
     const sheetData = sheetsMap.get(territoryName);
+
+    if (sheetData) {
+      matchCount++;
+    }
 
     if (sheetData) {
       // Territoire trouvé dans Sheets : enrichir avec toutes les données
@@ -59,6 +69,8 @@ export function enrichTerritoriesWithSheets(
       };
     }
   });
+
+  console.log(`✅ Merger: ${matchCount}/${kmlCollection.features.length} territoires matchés avec Sheets`);
 
   return {
     type: 'FeatureCollection',

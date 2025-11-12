@@ -29,6 +29,7 @@ async function readSheetTab(tabName: string): Promise<SheetRow[]> {
     // La première ligne contient les en-têtes
     const headers = rows[0] as string[];
     const dataRows = rows.slice(1);
+    console.log(`📊 Onglet "${tabName}": ${dataRows.length} lignes, colonnes:`, headers);
 
     // Mapper chaque ligne en objet avec les en-têtes comme clés
     return dataRows.map((row) => {
@@ -125,5 +126,6 @@ export async function getAllTerritoriesFromSheets(): Promise<TerritorySheetRow[]
   }
 
   console.log(`✅ ${territories.length} territoires lus depuis Google Sheets`);
+  console.log('📋 Exemples de territoires (premiers 5):', territories.slice(0, 5).map(t => ({ code: t.code, city: t.city, fullName: t.fullName })));
   return territories;
 }
