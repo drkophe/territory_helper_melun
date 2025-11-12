@@ -4,23 +4,26 @@
  * Page de la carte interactive des territoires
  */
 
+// Désactiver la génération statique pour cette page (nécessite le navigateur)
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-import L from 'leaflet';
+import dynamicImport from 'next/dynamic';
+import type L from 'leaflet';
 import type { TerritoryCollection, SelectedTerritory } from '@/features/territories/types';
 
 // Import dynamique pour éviter les problèmes SSR avec Leaflet
-const MapContainer = dynamic(
+const MapContainer = dynamicImport(
   () => import('@/features/map/components/MapContainer'),
   { ssr: false }
 );
 
-const TerritoryLayer = dynamic(
+const TerritoryLayer = dynamicImport(
   () => import('@/features/map/components/TerritoryLayer'),
   { ssr: false }
 );
 
-const TerritoryInfoPanel = dynamic(
+const TerritoryInfoPanel = dynamicImport(
   () => import('@/features/territories/components/TerritoryInfoPanel'),
   { ssr: false }
 );
@@ -58,7 +61,7 @@ export default function CartePage() {
     loadTerritories();
   }, []);
 
-  const handleTerritoryClick = (territory: SelectedTerritory) => {
+  const handleTerritoryClick = async (territory: SelectedTerritory) => {
     setSelectedTerritory(territory);
 
     // Zoomer sur le territoire sélectionné
@@ -68,6 +71,9 @@ export default function CartePage() {
       );
 
       if (feature && feature.geometry) {
+        // Import dynamique de Leaflet pour éviter les problèmes SSR
+        const L = (await import('leaflet')).default;
+
         // Créer un layer temporaire pour obtenir les bounds
         const tempLayer = L.geoJSON(feature);
         const bounds = tempLayer.getBounds();

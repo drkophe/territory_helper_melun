@@ -11,6 +11,7 @@
   "dependencies": {
     "@mapbox/togeojson": "^0.16.2",
     "@xmldom/xmldom": "^0.8.11",
+    "googleapis": "^166.0.0",
     "leaflet": "^1.9.4",
     "next": "^15.0.3",
     "react": "^18.3.1",

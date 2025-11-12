@@ -4,7 +4,8 @@
  * Panel d'information d'un territoire
  */
 
-import type { SelectedTerritory } from '../types';
+import type { SelectedTerritory, EnrichedTerritoryProperties } from '../types';
+import { STATUS_COLORS } from '@/features/map/config';
 
 interface TerritoryInfoPanelProps {
   territory: SelectedTerritory | null;
@@ -12,8 +13,39 @@ interface TerritoryInfoPanelProps {
   onHide?: (territoryName: string) => void;
 }
 
+// Helper pour obtenir le label du statut
+function getStatusLabel(status?: string): string {
+  switch (status) {
+    case 'available':
+      return 'Disponible';
+    case 'assigned':
+      return 'Attribué';
+    case 'unknown':
+      return 'Inconnu';
+    default:
+      return 'Non attribué';
+  }
+}
+
+// Helper pour obtenir la couleur du badge selon le statut
+function getStatusBadgeClasses(status?: string): string {
+  switch (status) {
+    case 'available':
+      return 'bg-green-100 text-green-800';
+    case 'assigned':
+      return 'bg-orange-100 text-orange-800';
+    case 'unknown':
+      return 'bg-gray-100 text-gray-800';
+    default:
+      return 'bg-blue-100 text-blue-800';
+  }
+}
+
 export default function TerritoryInfoPanel({ territory, onClose, onHide }: TerritoryInfoPanelProps) {
   if (!territory) return null;
+
+  // Typer les propriétés enrichies si disponibles
+  const enrichedProps = territory.properties as Partial<EnrichedTerritoryProperties>;
 
   const handleHide = () => {
     if (onHide) {
@@ -83,13 +115,13 @@ export default function TerritoryInfoPanel({ territory, onClose, onHide }: Terri
               </span>
             </div>
 
-            {territory.folder && (
+            {(enrichedProps.city || territory.folder) && (
               <div className="flex items-start">
                 <span className="text-sm font-medium text-gray-500 w-32 flex-shrink-0">
                   Ville
                 </span>
                 <span className="text-sm text-gray-900">
-                  {territory.folder}
+                  {enrichedProps.city || territory.folder}
                 </span>
               </div>
             )}
@@ -98,13 +130,115 @@ export default function TerritoryInfoPanel({ territory, onClose, onHide }: Terri
               <span className="text-sm font-medium text-gray-500 w-32 flex-shrink-0">
                 Statut
               </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Non attribué
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClasses(enrichedProps.status)}`}>
+                {getStatusLabel(enrichedProps.status)}
               </span>
             </div>
+
+            {enrichedProps.fullName && (
+              <div className="flex items-start">
+                <span className="text-sm font-medium text-gray-500 w-32 flex-shrink-0">
+                  Attribué à
+                </span>
+                <span className="text-sm text-gray-900 font-medium">
+                  {enrichedProps.fullName}
+                </span>
+              </div>
+            )}
+
+            {enrichedProps.campaign && (
+              <div className="flex items-start">
+                <span className="text-sm font-medium text-gray-500 w-32 flex-shrink-0">
+                  Campagne
+                </span>
+                <span className="text-sm text-gray-900">
+                  {enrichedProps.campaign}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Description */}
+          {/* Dates (Sprint 2 - Google Sheets) */}
+          {(enrichedProps.givenAt || enrichedProps.contactAt || enrichedProps.limitAt || enrichedProps.returnedAt) && (
+            <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                Dates
+              </h4>
+
+              {enrichedProps.givenAt && (
+                <div className="flex items-start">
+                  <span className="text-sm font-medium text-gray-600 w-32 flex-shrink-0">
+                    Remis le
+                  </span>
+                  <span className="text-sm text-gray-900">
+                    {enrichedProps.givenAt}
+                  </span>
+                </div>
+              )}
+
+              {enrichedProps.contactAt && (
+                <div className="flex items-start">
+                  <span className="text-sm font-medium text-gray-600 w-32 flex-shrink-0">
+                    Contacté le
+                  </span>
+                  <span className="text-sm text-gray-900">
+                    {enrichedProps.contactAt}
+                  </span>
+                </div>
+              )}
+
+              {enrichedProps.limitAt && (
+                <div className="flex items-start">
+                  <span className="text-sm font-medium text-gray-600 w-32 flex-shrink-0">
+                    Limite
+                  </span>
+                  <span className="text-sm text-gray-900">
+                    {enrichedProps.limitAt}
+                  </span>
+                </div>
+              )}
+
+              {enrichedProps.returnedAt && (
+                <div className="flex items-start">
+                  <span className="text-sm font-medium text-gray-600 w-32 flex-shrink-0">
+                    Rendu le
+                  </span>
+                  <span className="text-sm text-gray-900 font-medium">
+                    {enrichedProps.returnedAt}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Commentaires et informations (Sprint 2) */}
+          {(enrichedProps.comment || enrichedProps.info) && (
+            <div className="space-y-4">
+              {enrichedProps.comment && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                    Commentaire
+                  </h4>
+                  <p className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-md">
+                    {enrichedProps.comment}
+                  </p>
+                </div>
+              )}
+
+              {enrichedProps.info && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                    Information
+                  </h4>
+                  <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
+                    {enrichedProps.info}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Description (Sprint 1 - KML) */}
           {territory.properties.description && (
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-2">
@@ -115,13 +249,6 @@ export default function TerritoryInfoPanel({ territory, onClose, onHide }: Terri
               </p>
             </div>
           )}
-
-          {/* Placeholder pour futures fonctionnalités */}
-          <div className="border-t border-gray-200 pt-6">
-            <p className="text-sm text-gray-500 italic">
-              Les fonctionnalités d'attribution et de gestion seront disponibles dans les prochains sprints.
-            </p>
-          </div>
 
           {/* Actions */}
           <div className="space-y-3">

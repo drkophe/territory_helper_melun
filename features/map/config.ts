@@ -43,3 +43,23 @@ export const SELECTED_TERRITORY_STYLE: TerritoryStyle = {
   fillOpacity: 0.3,        // 30% d'opacité
   weight: 3,               // Bordure épaisse
 };
+
+// Couleurs par statut (Sprint 2 - Google Sheets)
+export const STATUS_COLORS = {
+  available: '#22c55e',    // Vert - Disponible
+  assigned: '#f59e0b',     // Orange - Attribué
+  unknown: '#6b7280',      // Gris - Inconnu
+} as const;
+
+/**
+ * Retourne un style de territoire en fonction de son statut
+ */
+export function getStyleByStatus(status: 'available' | 'assigned' | 'unknown'): TerritoryStyle {
+  const color = STATUS_COLORS[status];
+  return {
+    color,
+    fillColor: color,
+    fillOpacity: 0.3,
+    weight: 2,
+  };
+}

@@ -6,11 +6,12 @@
 
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import type { TerritoryCollection, TerritoryFeature, SelectedTerritory } from '@/features/territories/types';
+import type { TerritoryCollection, TerritoryFeature, SelectedTerritory, EnrichedTerritoryProperties } from '@/features/territories/types';
 import {
   DEFAULT_TERRITORY_STYLE,
   HOVER_TERRITORY_STYLE,
-  SELECTED_TERRITORY_STYLE
+  SELECTED_TERRITORY_STYLE,
+  getStyleByStatus
 } from '../config';
 
 interface TerritoryLayerProps {
@@ -56,6 +57,14 @@ export default function TerritoryLayer({
           if (selectedTerritory && feature?.properties?.name === selectedTerritory.name) {
             return SELECTED_TERRITORY_STYLE;
           }
+
+          // Style selon le statut (Sprint 2 - Google Sheets)
+          const props = feature?.properties as Partial<EnrichedTerritoryProperties>;
+          if (props?.status) {
+            return getStyleByStatus(props.status);
+          }
+
+          // Fallback sur le style par défaut (Sprint 1)
           return DEFAULT_TERRITORY_STYLE;
         },
         onEachFeature: (feature, layer) => {
@@ -64,13 +73,30 @@ export default function TerritoryLayer({
             mouseover: (e) => {
               const layer = e.target;
               if (!selectedTerritory || feature.properties?.name !== selectedTerritory.name) {
-                layer.setStyle(HOVER_TERRITORY_STYLE);
+                // Appliquer un hover qui garde la couleur de base mais augmente l'opacité
+                const props = feature.properties as Partial<EnrichedTerritoryProperties>;
+                if (props?.status) {
+                  const baseStyle = getStyleByStatus(props.status);
+                  layer.setStyle({
+                    ...baseStyle,
+                    fillOpacity: 0.5,
+                    weight: 3,
+                  });
+                } else {
+                  layer.setStyle(HOVER_TERRITORY_STYLE);
+                }
               }
             },
             mouseout: (e) => {
               const layer = e.target;
               if (!selectedTerritory || feature.properties?.name !== selectedTerritory.name) {
-                layer.setStyle(DEFAULT_TERRITORY_STYLE);
+                // Restaurer le style basé sur le statut
+                const props = feature.properties as Partial<EnrichedTerritoryProperties>;
+                if (props?.status) {
+                  layer.setStyle(getStyleByStatus(props.status));
+                } else {
+                  layer.setStyle(DEFAULT_TERRITORY_STYLE);
+                }
               } else {
                 layer.setStyle(SELECTED_TERRITORY_STYLE);
               }
@@ -134,7 +160,13 @@ export default function TerritoryLayer({
               if (selectedTerritory && feature.properties.name === selectedTerritory.name) {
                 subLayer.setStyle(SELECTED_TERRITORY_STYLE);
               } else {
-                subLayer.setStyle(DEFAULT_TERRITORY_STYLE);
+                // Utiliser le style basé sur le statut (Sprint 2)
+                const props = feature.properties as Partial<EnrichedTerritoryProperties>;
+                if (props?.status) {
+                  subLayer.setStyle(getStyleByStatus(props.status));
+                } else {
+                  subLayer.setStyle(DEFAULT_TERRITORY_STYLE);
+                }
               }
             }
           }
