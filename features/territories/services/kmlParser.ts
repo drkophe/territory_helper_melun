@@ -69,7 +69,8 @@ function extractFolderName(kmlDoc: Document, territoryName?: string): string | u
           parent = parent.parentNode;
         }
 
-        if (parent && parent instanceof Element) {
+        // Vérifier que parent a la méthode getElementsByTagName (compatible Node.js)
+        if (parent && 'getElementsByTagName' in parent && typeof parent.getElementsByTagName === 'function') {
           const folderNameElement = parent.getElementsByTagName('name')[0];
           return folderNameElement?.textContent || undefined;
         }
