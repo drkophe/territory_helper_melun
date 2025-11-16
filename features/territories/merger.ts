@@ -6,6 +6,7 @@
 import type { TerritoryCollection, TerritoryFeature, EnrichedTerritoryProperties, TerritorySheetRow } from './types';
 import { computeTerritoryStatus, computeAvailabilityPriority, computeDaysSinceLastReturn, type AvailabilityPriority } from './status';
 import { normalizeTerritoryCode } from '@/features/google-sheets/normalization';
+import { STATUS_COLORS } from '@/features/map/config';
 
 /**
  * Enrichit une collection de territoires KML avec les données Google Sheets
@@ -91,6 +92,15 @@ export function enrichTerritoriesWithSheets(
 
   console.log(`✅ Merger: ${matchCount}/${kmlCollection.features.length} territoires matchés avec Sheets`);
 
+  // Palette de couleurs utilisée
+  console.log('🎨 Palette de couleurs:', {
+    assigned: STATUS_COLORS.assigned,
+    availableHigh: STATUS_COLORS.availableHigh + ' (>365j)',
+    availableMedium: STATUS_COLORS.availableMedium + ' (180-365j)',
+    availableLow: STATUS_COLORS.availableLow + ' (<180j)',
+    unknown: STATUS_COLORS.unknown,
+  });
+
   // Statistiques par statut
   const byStatus = {
     assigned: enrichedFeatures.filter((f) => (f.properties as EnrichedTerritoryProperties).status === 'assigned').length,
@@ -117,17 +127,29 @@ export function enrichTerritoriesWithSheets(
     console.log('🔴 Exemples de territoires INDISPONIBLES (assigned) - 5 premiers:', assignedSamples);
   }
 
-  // Exemples de territoires available avec priorités
+  // Exemples de territoires available avec priorités et couleurs
   const availableSamples = enrichedFeatures
     .filter((f) => (f.properties as EnrichedTerritoryProperties).status === 'available')
     .slice(0, 10)
     .map((f) => {
       const props = f.properties as EnrichedTerritoryProperties;
+
+      // Déterminer la couleur selon la priorité
+      let fillColor: string = STATUS_COLORS.availableHigh; // Par défaut
+      if (props.availabilityPriority === 'high') {
+        fillColor = STATUS_COLORS.availableHigh;
+      } else if (props.availabilityPriority === 'medium') {
+        fillColor = STATUS_COLORS.availableMedium;
+      } else if (props.availabilityPriority === 'low') {
+        fillColor = STATUS_COLORS.availableLow;
+      }
+
       return {
         code: props.code,
         returnedAt: props.returnedAt,
         daysSince: props.daysSinceLastReturn,
         priority: props.availabilityPriority,
+        fillColor,
       };
     });
 

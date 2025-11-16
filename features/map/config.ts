@@ -47,14 +47,14 @@ export const SELECTED_TERRITORY_STYLE: TerritoryStyle = {
 // Couleurs par statut (Sprint 2 - Google Sheets)
 // Nouvelle logique métier :
 // - assigned (indisponible) = gris
-// - available = vert avec nuances selon priorité
+// - available = palette de verts selon ancienneté
 export const STATUS_COLORS = {
-  assigned: '#6b7280',           // Gris - Indisponible (attribué)
-  unknown: '#94a3b8',            // Gris clair - Inconnu
-  // Nuances de vert pour les disponibles selon priorité
-  availableHigh: '#22c55e',      // Vert vif - Très disponible (>365j ou jamais sorti)
-  availableMedium: '#84cc16',    // Vert moyen - Moyennement disponible (180-365j)
-  availableLow: '#a3a3a3',       // Gris-vert - Peu disponible (<180j, sorti récemment)
+  assigned: '#808080',           // Gris - Indisponible (attribué)
+  unknown: '#CCCCCC',            // Gris clair - Inconnu
+  // Palette de verts pour les disponibles selon priorité (du plus ancien au plus récent)
+  availableHigh: '#778873',      // Vert sombre - Très prioritaire (>365j ou jamais sorti)
+  availableMedium: '#A1BC98',    // Vert moyen - Moyennement prioritaire (180-365j)
+  availableLow: '#D2DCB6',       // Vert clair - Peu prioritaire (<180j, rendu récemment)
 } as const;
 
 /**
