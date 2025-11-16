@@ -76,17 +76,18 @@ export default function TerritoryLayer({
         };
       });
 
-    console.log('🌈 Exemples gradient (3 plus récents + 3 plus anciens):', gradientExamples);
+    console.log('🌈 Exemples gradient (3 plus récents + 3 plus anciens):');
+    console.table(gradientExamples);
 
     // Créer un groupe de couches (featureGroup permet getBounds)
     const layerGroup = L.featureGroup().addTo(map);
     layerGroupRef.current = layerGroup;
 
+    // Compteur pour logger quelques territoires disponibles
+    let availableLoggedCount = 0;
+
     // Ajouter chaque territoire
     territories.features.forEach((feature: TerritoryFeature, index) => {
-      if (index === 0) {
-        console.log('📍 Premier territoire:', feature.properties.name);
-      }
       const geoJsonLayer = L.geoJSON(feature, {
         style: (feature) => {
           // Style sélectionné si c'est le territoire actuel
@@ -97,7 +98,25 @@ export default function TerritoryLayer({
           // Style selon le statut et le gradient continu (Sprint 2 - Google Sheets)
           const props = feature?.properties as Partial<EnrichedTerritoryProperties>;
           if (props?.status) {
-            return getStyleByStatus(props.status, props.daysSinceLastReturn, minDays, maxDays);
+            const computedStyle = getStyleByStatus(props.status, props.daysSinceLastReturn, minDays, maxDays);
+
+            // Log des 2 premiers territoires disponibles pour debug
+            if (props.status === 'available' && availableLoggedCount < 2) {
+              console.log(`🎨 Style territoire disponible #${availableLoggedCount + 1}:`, {
+                code: props.code,
+                daysSince: props.daysSinceLastReturn,
+                minDays,
+                maxDays,
+                ratio: (maxDays > minDays && props.daysSinceLastReturn != null)
+                  ? ((props.daysSinceLastReturn - minDays) / (maxDays - minDays)).toFixed(3)
+                  : 'N/A',
+                fillColor: computedStyle.fillColor,
+                fullStyle: computedStyle
+              });
+              availableLoggedCount++;
+            }
+
+            return computedStyle;
           }
 
           // Fallback sur le style par défaut (Sprint 1)
