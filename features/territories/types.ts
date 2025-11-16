@@ -11,16 +11,17 @@ export type TerritoryStatus = 'available' | 'assigned' | 'unknown';
 export interface TerritorySheetRow {
   city: string;           // Ville (déduit du nom de l'onglet)
   code: string;           // Code territoire (Num.)
-  fullName?: string;      // Nom & Prénom
+  fullName?: string;      // Nom & Prénom / Identité
   firstName?: string;     // Prénom
-  givenAt?: string;       // Remis le
-  contactAt?: string;     // Contacté le
+  givenAt?: string;       // Remis le / Donné
+  contactAt?: string;     // Contacté le / Contacter
   limitAt?: string;       // Limite
-  returnedAt?: string;    // Rendu le
+  returnedAt?: string;    // Rendu le / Rendu
   comment?: string;       // Commentaire
-  info?: string;          // Info
+  info?: string;          // Info / Information
   sortieFlag?: string;    // Sortie (O/N)
   campaign?: string;      // Campagne
+  folder?: string;        // Classeur
   sheetName: string;      // Nom de l'onglet source
 }
 

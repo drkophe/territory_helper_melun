@@ -13,12 +13,11 @@ export interface SheetTabData {
   rows: SheetRow[];
 }
 
-// Liste des onglets à lire
+// Liste des onglets à lire (V2 - restructuré)
 export const SHEET_TABS = [
   'Melun',
   'Dammarie-Les-Lys',
-  'Exterieur B - L',
-  'Exterieur O - V',
+  'Exterieur',
 ] as const;
 
 export type SheetTabName = typeof SHEET_TABS[number];
