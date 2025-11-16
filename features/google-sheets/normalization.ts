@@ -56,9 +56,9 @@ export const HEADER_MAP: Record<string, string> = {
   'information': 'info',
   'info': 'info',
 
-  // Sortie
-  'sortie 23/24': 'sortieFlag',
-  'sortie 24/25': 'sortieFlag',
+  // Sortie (après normalisation, "Sortie 23/24" devient "sortie 2324")
+  'sortie 2324': 'sortieFlag',
+  'sortie 2425': 'sortieFlag',
   'sortie': 'sortieFlag',
 
   // Campagne
@@ -72,14 +72,16 @@ export const HEADER_MAP: Record<string, string> = {
  * Normalise une clé d'en-tête pour le mapping
  * - Minuscules
  * - Trim des espaces
- * - Suppression des caractères spéciaux multiples
+ * - Suppression des caractères spéciaux
+ * - Trim final pour enlever les espaces résiduels
  */
 export function normalizeHeaderKey(raw: string): string {
   return (raw ?? '')
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[.:;/\\]/g, '');
+    .replace(/[.:;/\\]/g, '')
+    .trim(); // IMPORTANT : trim final pour enlever l'espace après avoir retiré ":"
 }
 
 /**

@@ -148,15 +148,23 @@ export async function getAllTerritoriesFromSheets(): Promise<TerritorySheetRow[]
     territories.slice(0, 20).map((t) => t.code)
   );
   console.log(
-    '📋 Exemples (5 premiers):',
+    '📋 Exemples après mapping complet (5 premiers):',
     territories.slice(0, 5).map((t) => ({
       code: t.code,
       city: t.city,
       fullName: t.fullName,
       givenAt: t.givenAt,
+      contactAt: t.contactAt,
+      limitAt: t.limitAt,
       returnedAt: t.returnedAt,
+      sortieFlag: t.sortieFlag,
     }))
   );
+
+  // Compter combien ont des dates
+  const withGivenAt = territories.filter((t) => t.givenAt).length;
+  const withReturnedAt = territories.filter((t) => t.returnedAt).length;
+  console.log(`📅 Dates détectées: ${withGivenAt} avec givenAt, ${withReturnedAt} avec returnedAt`);
 
   return territories;
 }
