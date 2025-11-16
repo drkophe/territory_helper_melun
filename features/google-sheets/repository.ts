@@ -1,11 +1,13 @@
 /**
  * Repository pour lire et mapper les données Google Sheets
+ * Version 2: Support des en-têtes variés et normalisation
  */
 
 import { getSheetsClient, getSheetId } from './client';
 import type { SheetRow, SheetTabData, SheetTabName } from './types';
 import { SHEET_TABS } from './types';
 import type { TerritorySheetRow } from '@/features/territories/types';
+import { buildHeaderMapping, normalizeTerritoryCode } from './normalization';
 
 /**
  * Lit un onglet Google Sheets et retourne les données brutes
@@ -17,30 +19,54 @@ async function readSheetTab(tabName: string): Promise<SheetRow[]> {
   try {
     const response = await client.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `${tabName}!A1:Z1000`, // Lecture des colonnes A à Z, lignes 1 à 1000
+      range: `${tabName}!A1:Z2000`, // Lecture étendue pour capturer toutes les lignes
     });
 
     const rows = response.data.values;
     if (!rows || rows.length === 0) {
-      console.warn(`Onglet "${tabName}" vide ou introuvable`);
+      console.warn(`⚠️ Onglet "${tabName}" vide ou introuvable`);
       return [];
     }
 
     // La première ligne contient les en-têtes
-    const headers = rows[0] as string[];
+    const headerRow = rows[0] as string[];
     const dataRows = rows.slice(1);
-    console.log(`📊 Onglet "${tabName}": ${dataRows.length} lignes, colonnes:`, headers);
 
-    // Mapper chaque ligne en objet avec les en-têtes comme clés
-    return dataRows.map((row) => {
+    console.log(`📋 [${tabName}] Headers bruts:`, headerRow);
+
+    // Construire le mapping des en-têtes vers les propriétés
+    const headerMapping = buildHeaderMapping(headerRow);
+    console.log(`🧭 [${tabName}] Headers normalisés:`, headerMapping);
+
+    // Mapper chaque ligne en objet avec les propriétés normalisées
+    const mappedRows: SheetRow[] = [];
+
+    for (const row of dataRows) {
+      // Ignorer les lignes complètement vides
+      const isBlank = !row.some((cell) => (cell ?? '').toString().trim());
+      if (isBlank) continue;
+
       const rowData: SheetRow = {};
-      headers.forEach((header, index) => {
-        rowData[header] = row[index] as string | undefined;
+
+      headerMapping.forEach((mappedKey, index) => {
+        if (mappedKey === 'ignore') return;
+
+        const cellValue = row[index];
+        if (cellValue !== undefined && cellValue !== null) {
+          const trimmed = cellValue.toString().trim();
+          if (trimmed) {
+            rowData[mappedKey] = trimmed;
+          }
+        }
       });
-      return rowData;
-    });
+
+      mappedRows.push(rowData);
+    }
+
+    console.log(`✅ [${tabName}] ${mappedRows.length} lignes valides sur ${dataRows.length} total`);
+    return mappedRows;
   } catch (error) {
-    console.error(`Erreur lors de la lecture de l'onglet "${tabName}":`, error);
+    console.error(`❌ Erreur lors de la lecture de l'onglet "${tabName}":`, error);
     throw new Error(`Failed to read sheet tab: ${tabName}`);
   }
 }
@@ -63,46 +89,37 @@ export async function readAllSheetTabs(): Promise<SheetTabData[]> {
 }
 
 /**
- * Mappe une ligne Google Sheets brute vers TerritorySheetRow
- *
- * Mapping des colonnes :
- * - "Num." → code
- * - "Nom & Prénom" → fullName
- * - "Prénom" → firstName
- * - "Remis le" → givenAt
- * - "Contacté le" → contactAt
- * - "Limite" → limitAt
- * - "Rendu le" → returnedAt
- * - "Commentaire" → comment
- * - "Info" → info
- * - "Sortie" → sortieFlag
- * - "Campagne" → campaign
+ * Mappe une ligne normalisée vers TerritorySheetRow
  */
 function mapRowToTerritorySheetRow(
   row: SheetRow,
   city: string,
   sheetName: string
 ): TerritorySheetRow | null {
-  const code = row['Num.']?.trim();
+  const rawCode = row['code']?.trim();
 
   // Si pas de code, on ignore la ligne
-  if (!code) {
+  if (!rawCode) {
     return null;
   }
+
+  // Normaliser le code pour le matching
+  const code = normalizeTerritoryCode(rawCode);
 
   return {
     city,
     code,
-    fullName: row['Nom & Prénom']?.trim() || undefined,
-    firstName: row['Prénom']?.trim() || undefined,
-    givenAt: row['Remis le']?.trim() || undefined,
-    contactAt: row['Contacté le']?.trim() || undefined,
-    limitAt: row['Limite']?.trim() || undefined,
-    returnedAt: row['Rendu le']?.trim() || undefined,
-    comment: row['Commentaire']?.trim() || undefined,
-    info: row['Info']?.trim() || undefined,
-    sortieFlag: row['Sortie']?.trim() || undefined,
-    campaign: row['Campagne']?.trim() || undefined,
+    fullName: row['fullName'] || undefined,
+    firstName: row['firstName'] || undefined,
+    givenAt: row['givenAt'] || undefined,
+    contactAt: row['contactAt'] || undefined,
+    limitAt: row['limitAt'] || undefined,
+    returnedAt: row['returnedAt'] || undefined,
+    comment: row['comment'] || undefined,
+    info: row['info'] || undefined,
+    sortieFlag: row['sortieFlag'] || undefined,
+    campaign: row['campaign'] || undefined,
+    folder: row['folder'] || undefined,
     sheetName,
   };
 }
@@ -126,6 +143,20 @@ export async function getAllTerritoriesFromSheets(): Promise<TerritorySheetRow[]
   }
 
   console.log(`✅ ${territories.length} territoires lus depuis Google Sheets`);
-  console.log('📋 Exemples de territoires (premiers 5):', territories.slice(0, 5).map(t => ({ code: t.code, city: t.city, fullName: t.fullName })));
+  console.log(
+    '🔑 Sheets codes (20 premiers):',
+    territories.slice(0, 20).map((t) => t.code)
+  );
+  console.log(
+    '📋 Exemples (5 premiers):',
+    territories.slice(0, 5).map((t) => ({
+      code: t.code,
+      city: t.city,
+      fullName: t.fullName,
+      givenAt: t.givenAt,
+      returnedAt: t.returnedAt,
+    }))
+  );
+
   return territories;
 }

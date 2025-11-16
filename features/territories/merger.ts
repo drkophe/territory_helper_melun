@@ -1,9 +1,11 @@
 /**
  * Fusion des données KML et Google Sheets
+ * Version 2: Avec normalisation des codes pour matching robuste
  */
 
 import type { TerritoryCollection, TerritoryFeature, EnrichedTerritoryProperties, TerritorySheetRow } from './types';
 import { computeTerritoryStatus } from './status';
+import { normalizeTerritoryCode } from '@/features/google-sheets/normalization';
 
 /**
  * Enrichit une collection de territoires KML avec les données Google Sheets
@@ -18,26 +20,32 @@ export function enrichTerritoriesWithSheets(
 ): TerritoryCollection {
   console.log(`📋 Merger: ${kmlCollection.features.length} territoires KML, ${sheetsData.length} lignes Sheets`);
 
-  // Créer une map pour lookup rapide par code de territoire
+  // Créer une map pour lookup rapide par code de territoire normalisé
   const sheetsMap = new Map<string, TerritorySheetRow>();
   sheetsData.forEach((row) => {
-    sheetsMap.set(row.code, row);
+    sheetsMap.set(row.code, row); // Le code est déjà normalisé côté Sheets
   });
 
-  console.log('🔑 Codes Sheets (premiers 10):', Array.from(sheetsMap.keys()).slice(0, 10));
-  console.log('🔑 Codes KML (premiers 10):', kmlCollection.features.slice(0, 10).map(f => f.properties.name));
+  console.log('🔑 Codes Sheets (20 premiers):', Array.from(sheetsMap.keys()).slice(0, 20));
+
+  // Normaliser et logger les codes KML
+  const kmlCodesNormalized = kmlCollection.features.slice(0, 20).map((f) => {
+    const raw = f.properties.name;
+    const normalized = normalizeTerritoryCode(raw);
+    return `${raw} → ${normalized}`;
+  });
+  console.log('🔑 Codes KML normalisés (20 premiers):', kmlCodesNormalized);
 
   // Enrichir chaque feature KML
   let matchCount = 0;
   const enrichedFeatures = kmlCollection.features.map((feature): TerritoryFeature => {
     const territoryName = feature.properties.name;
-    const sheetData = sheetsMap.get(territoryName);
+    const normalizedCode = normalizeTerritoryCode(territoryName);
+    const sheetData = sheetsMap.get(normalizedCode);
 
     if (sheetData) {
       matchCount++;
-    }
 
-    if (sheetData) {
       // Territoire trouvé dans Sheets : enrichir avec toutes les données
       const status = computeTerritoryStatus(sheetData);
 
@@ -45,7 +53,7 @@ export function enrichTerritoriesWithSheets(
         ...feature.properties,
         ...sheetData,
         status,
-        code: sheetData.code,
+        code: normalizedCode, // Utiliser le code normalisé
         city: sheetData.city,
       };
 
@@ -58,7 +66,7 @@ export function enrichTerritoriesWithSheets(
       const enrichedProperties: EnrichedTerritoryProperties = {
         ...feature.properties,
         status: 'unknown',
-        code: territoryName,
+        code: normalizedCode, // Utiliser le code normalisé
         city: feature.properties.folder || 'Inconnu',
         sheetName: 'N/A',
       };
@@ -71,6 +79,19 @@ export function enrichTerritoriesWithSheets(
   });
 
   console.log(`✅ Merger: ${matchCount}/${kmlCollection.features.length} territoires matchés avec Sheets`);
+
+  // Afficher quelques exemples de non-matchés pour diagnostic
+  const unmatched = enrichedFeatures
+    .filter((f) => (f.properties as EnrichedTerritoryProperties).status === 'unknown')
+    .slice(0, 10)
+    .map((f) => ({
+      name: f.properties.name,
+      code: (f.properties as EnrichedTerritoryProperties).code,
+    }));
+
+  if (unmatched.length > 0) {
+    console.log('⚠️ Exemples de territoires non matchés (10 premiers):', unmatched);
+  }
 
   return {
     type: 'FeatureCollection',
