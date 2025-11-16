@@ -52,9 +52,9 @@ export const STATUS_COLORS = {
   assigned: '#808080',           // Gris - Indisponible (attribué)
   unknown: '#CCCCCC',            // Gris clair - Inconnu
   // Palette de verts pour les disponibles selon priorité (du plus ancien au plus récent)
-  availableHigh: '#778873',      // Vert sombre - Très prioritaire (>365j ou jamais sorti)
-  availableMedium: '#A1BC98',    // Vert moyen - Moyennement prioritaire (180-365j)
-  availableLow: '#D2DCB6',       // Vert clair - Peu prioritaire (<180j, rendu récemment)
+  availableHigh: '#4E56C0',      // Vert sombre - Très prioritaire (>365j ou jamais sorti)
+  availableMedium: '#9B5DE0',    // Vert moyen - Moyennement prioritaire (180-365j)
+  availableLow: '#D78FEE',       // Vert clair - Peu prioritaire (<180j, rendu récemment)
 } as const;
 
 /**
@@ -90,7 +90,7 @@ export function getStyleByStatus(
   return {
     color,
     fillColor: color,
-    fillOpacity: 0.3,
+    fillOpacity: 0.5,
     weight: 2,
   };
 }
