@@ -28,6 +28,14 @@ const TerritoryInfoPanel = dynamicImport(
   { ssr: false }
 );
 
+const FiltersPanel = dynamicImport(
+  () => import('@/features/map/components/FiltersPanel'),
+  { ssr: false }
+);
+
+// Import types pour les filtres
+import type { ColorMode, AgeFilter, StatusFilter } from '@/features/map/components/FiltersPanel';
+
 export default function CartePage() {
   const [territories, setTerritories] = useState<TerritoryCollection | null>(null);
   const [selectedTerritory, setSelectedTerritory] = useState<SelectedTerritory | null>(null);
@@ -35,6 +43,12 @@ export default function CartePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hiddenTerritories, setHiddenTerritories] = useState<Set<string>>(new Set());
+
+  // États des filtres
+  const [colorMode, setColorMode] = useState<ColorMode>('gradient');
+  const [ageFilter, setAgeFilter] = useState<AgeFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [hideBoundary, setHideBoundary] = useState<boolean>(true);
 
   // Charger les territoires
   useEffect(() => {
@@ -168,6 +182,20 @@ export default function CartePage() {
 
         {!isLoading && !error && territories && visibleTerritories && (
           <>
+            {/* Panneau de filtres */}
+            <div className="absolute top-4 left-4 z-[1000] max-w-md">
+              <FiltersPanel
+                colorMode={colorMode}
+                onColorModeChange={setColorMode}
+                ageFilter={ageFilter}
+                onAgeFilterChange={setAgeFilter}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                hideBoundary={hideBoundary}
+                onHideBoundaryChange={setHideBoundary}
+              />
+            </div>
+
             {/* Carte */}
             <MapContainer onMapReady={setMap} />
 
@@ -178,6 +206,10 @@ export default function CartePage() {
                 territories={visibleTerritories}
                 selectedTerritory={selectedTerritory}
                 onTerritoryClick={handleTerritoryClick}
+                colorMode={colorMode}
+                ageFilter={ageFilter}
+                statusFilter={statusFilter}
+                hideBoundary={hideBoundary}
               />
             )}
 
