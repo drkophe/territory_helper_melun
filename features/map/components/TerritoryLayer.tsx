@@ -58,10 +58,10 @@ export default function TerritoryLayer({
             return SELECTED_TERRITORY_STYLE;
           }
 
-          // Style selon le statut (Sprint 2 - Google Sheets)
+          // Style selon le statut et la priorité (Sprint 2 - Google Sheets)
           const props = feature?.properties as Partial<EnrichedTerritoryProperties>;
           if (props?.status) {
-            return getStyleByStatus(props.status);
+            return getStyleByStatus(props.status, props.availabilityPriority);
           }
 
           // Fallback sur le style par défaut (Sprint 1)
@@ -76,7 +76,7 @@ export default function TerritoryLayer({
                 // Appliquer un hover qui garde la couleur de base mais augmente l'opacité
                 const props = feature.properties as Partial<EnrichedTerritoryProperties>;
                 if (props?.status) {
-                  const baseStyle = getStyleByStatus(props.status);
+                  const baseStyle = getStyleByStatus(props.status, props.availabilityPriority);
                   layer.setStyle({
                     ...baseStyle,
                     fillOpacity: 0.5,
@@ -90,10 +90,10 @@ export default function TerritoryLayer({
             mouseout: (e) => {
               const layer = e.target;
               if (!selectedTerritory || feature.properties?.name !== selectedTerritory.name) {
-                // Restaurer le style basé sur le statut
+                // Restaurer le style basé sur le statut et la priorité
                 const props = feature.properties as Partial<EnrichedTerritoryProperties>;
                 if (props?.status) {
-                  layer.setStyle(getStyleByStatus(props.status));
+                  layer.setStyle(getStyleByStatus(props.status, props.availabilityPriority));
                 } else {
                   layer.setStyle(DEFAULT_TERRITORY_STYLE);
                 }
@@ -160,10 +160,10 @@ export default function TerritoryLayer({
               if (selectedTerritory && feature.properties.name === selectedTerritory.name) {
                 subLayer.setStyle(SELECTED_TERRITORY_STYLE);
               } else {
-                // Utiliser le style basé sur le statut (Sprint 2)
+                // Utiliser le style basé sur le statut et la priorité (Sprint 2)
                 const props = feature.properties as Partial<EnrichedTerritoryProperties>;
                 if (props?.status) {
-                  subLayer.setStyle(getStyleByStatus(props.status));
+                  subLayer.setStyle(getStyleByStatus(props.status, props.availabilityPriority));
                 } else {
                   subLayer.setStyle(DEFAULT_TERRITORY_STYLE);
                 }
