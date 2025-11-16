@@ -38,7 +38,7 @@ export function computeTerritoryStatus(row: TerritorySheetRow): TerritoryStatus 
 
 /**
  * Parse une date au format français (DD/MM/YY ou DD/MM/YYYY)
- * Retourne undefined si le parsing échoue
+ * Retourne undefined si le parsing échoue ou si la date est dans le futur
  */
 function parseFrenchDate(dateStr: string | undefined): Date | undefined {
   if (!dateStr) return undefined;
@@ -63,6 +63,13 @@ function parseFrenchDate(dateStr: string | undefined): Date | undefined {
 
   // Vérifier que la date est valide
   if (isNaN(date.getTime())) return undefined;
+
+  // Rejeter les dates dans le futur (erreur de saisie probable)
+  const today = new Date();
+  if (date.getTime() > today.getTime()) {
+    console.warn(`⚠️ Date dans le futur ignorée: ${dateStr} → ${date.toLocaleDateString('fr-FR')}`);
+    return undefined;
+  }
 
   return date;
 }

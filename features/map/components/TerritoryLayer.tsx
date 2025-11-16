@@ -43,29 +43,61 @@ export default function TerritoryLayer({
     console.log('✨ TerritoryLayer - Création des couches pour', territories.features.length, 'territoires');
 
     // Calculer min/max days depuis le retour pour le gradient continu
+    // Filtrer les dates aberrantes (négatives ou > 10 ans)
+    const MAX_DAYS_THRESHOLD = 3650; // 10 ans
     const availableWithDays = territories.features
       .map(f => (f.properties as EnrichedTerritoryProperties))
-      .filter(p => p.status === 'available' && p.daysSinceLastReturn !== undefined)
+      .filter(p =>
+        p.status === 'available' &&
+        p.daysSinceLastReturn !== undefined &&
+        p.daysSinceLastReturn >= 0 &&
+        p.daysSinceLastReturn <= MAX_DAYS_THRESHOLD
+      )
       .map(p => p.daysSinceLastReturn!);
 
     const minDays = availableWithDays.length > 0 ? Math.min(...availableWithDays) : 0;
     const maxDays = availableWithDays.length > 0 ? Math.max(...availableWithDays) : 0;
 
-    console.log('🎨 Gradient range:', { minDays, maxDays, count: availableWithDays.length });
-
-    // Exemples de gradient (premiers et derniers)
-    const gradientExamples = territories.features
+    // Compter les dates aberrantes pour diagnostic
+    const aberrantDates = territories.features
       .map(f => (f.properties as EnrichedTerritoryProperties))
-      .filter(p => p.status === 'available' && p.daysSinceLastReturn !== undefined)
-      .sort((a, b) => (a.daysSinceLastReturn || 0) - (b.daysSinceLastReturn || 0))
-      .slice(0, 3)
-      .concat(
-        territories.features
-          .map(f => (f.properties as EnrichedTerritoryProperties))
-          .filter(p => p.status === 'available' && p.daysSinceLastReturn !== undefined)
-          .sort((a, b) => (b.daysSinceLastReturn || 0) - (a.daysSinceLastReturn || 0))
-          .slice(0, 3)
+      .filter(p =>
+        p.status === 'available' &&
+        p.daysSinceLastReturn !== undefined &&
+        (p.daysSinceLastReturn < 0 || p.daysSinceLastReturn > MAX_DAYS_THRESHOLD)
+      );
+
+    console.log('🎨 Gradient range:', {
+      minDays,
+      maxDays,
+      count: availableWithDays.length,
+      aberrantCount: aberrantDates.length
+    });
+
+    if (aberrantDates.length > 0) {
+      console.warn('⚠️ Dates aberrantes détectées (ignorées pour le gradient):',
+        aberrantDates.slice(0, 5).map(p => ({
+          code: p.code,
+          daysSince: p.daysSinceLastReturn,
+          returnedAt: p.returnedAt
+        }))
+      );
+    }
+
+    // Exemples de gradient (premiers et derniers) - uniquement dates valides
+    const validAvailable = territories.features
+      .map(f => (f.properties as EnrichedTerritoryProperties))
+      .filter(p =>
+        p.status === 'available' &&
+        p.daysSinceLastReturn !== undefined &&
+        p.daysSinceLastReturn >= 0 &&
+        p.daysSinceLastReturn <= MAX_DAYS_THRESHOLD
       )
+      .sort((a, b) => (a.daysSinceLastReturn || 0) - (b.daysSinceLastReturn || 0));
+
+    const gradientExamples = validAvailable
+      .slice(0, 3)
+      .concat(validAvailable.slice(-3))
       .map(p => {
         const style = getStyleByStatus(p.status, p.daysSinceLastReturn, minDays, maxDays);
         return {
@@ -76,7 +108,7 @@ export default function TerritoryLayer({
         };
       });
 
-    console.log('🌈 Exemples gradient (3 plus récents + 3 plus anciens):');
+    console.log('🌈 Exemples gradient (3 plus récents + 3 plus anciens, dates valides):');
     console.table(gradientExamples);
 
     // Créer un groupe de couches (featureGroup permet getBounds)
@@ -206,10 +238,16 @@ export default function TerritoryLayer({
   useEffect(() => {
     if (!layerGroupRef.current || !territories) return;
 
-    // Recalculer min/max days pour le gradient
+    // Recalculer min/max days pour le gradient (filtrer dates aberrantes)
+    const MAX_DAYS_THRESHOLD = 3650; // 10 ans
     const availableWithDays = territories.features
       .map(f => (f.properties as EnrichedTerritoryProperties))
-      .filter(p => p.status === 'available' && p.daysSinceLastReturn !== undefined)
+      .filter(p =>
+        p.status === 'available' &&
+        p.daysSinceLastReturn !== undefined &&
+        p.daysSinceLastReturn >= 0 &&
+        p.daysSinceLastReturn <= MAX_DAYS_THRESHOLD
+      )
       .map(p => p.daysSinceLastReturn!);
 
     const minDays = availableWithDays.length > 0 ? Math.min(...availableWithDays) : 0;
