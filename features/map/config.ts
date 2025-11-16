@@ -45,43 +45,114 @@ export const SELECTED_TERRITORY_STYLE: TerritoryStyle = {
 };
 
 // Couleurs par statut (Sprint 2 - Google Sheets)
-// Nouvelle logique métier :
-// - assigned (indisponible) = gris
-// - available = palette de verts selon ancienneté
+// Gradient continu de violets selon ancienneté pour les disponibles
 export const STATUS_COLORS = {
   assigned: '#808080',           // Gris - Indisponible (attribué)
   unknown: '#CCCCCC',            // Gris clair - Inconnu
-  // Palette de verts pour les disponibles selon priorité (du plus ancien au plus récent)
-  availableHigh: '#4E56C0',      // Vert sombre - Très prioritaire (>365j ou jamais sorti)
-  availableMedium: '#9B5DE0',    // Vert moyen - Moyennement prioritaire (180-365j)
-  availableLow: '#D78FEE',       // Vert clair - Peu prioritaire (<180j, rendu récemment)
+  // Gradient de violets pour les disponibles (du plus récent au plus ancien)
+  availableNewest: '#D78FEE',    // 0% - Rendu récemment (moins prioritaire)
+  availableMiddle: '#9B5DE0',    // 50% - Milieu
+  availableOldest: '#4E56C0',    // 100% - Très ancien (très prioritaire)
 } as const;
 
 /**
- * Retourne un style de territoire en fonction de son statut et de sa priorité
+ * Convertit un code hex en RGB
+ */
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const cleaned = hex.replace('#', '');
+  const num = parseInt(cleaned, 16);
+  return {
+    r: (num >> 16) & 0xff,
+    g: (num >> 8) & 0xff,
+    b: num & 0xff,
+  };
+}
+
+/**
+ * Convertit RGB en hex
+ */
+function rgbToHex(r: number, g: number, b: number): string {
+  return (
+    '#' +
+    [r, g, b]
+      .map((x) => Math.round(x).toString(16).padStart(2, '0'))
+      .join('')
+  );
+}
+
+/**
+ * Interpolation linéaire
+ */
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+/**
+ * Interpole entre deux couleurs hex
+ */
+function interpolateColor(fromHex: string, toHex: string, t: number): string {
+  const from = hexToRgb(fromHex);
+  const to = hexToRgb(toHex);
+  const r = lerp(from.r, to.r, t);
+  const g = lerp(from.g, to.g, t);
+  const b = lerp(from.b, to.b, t);
+  return rgbToHex(r, g, b);
+}
+
+/**
+ * Retourne une couleur du gradient violet selon un ratio [0,1]
+ * - 0 = plus récent (violet clair #D78FEE)
+ * - 0.5 = milieu (#9B5DE0)
+ * - 1 = plus ancien (violet foncé #4E56C0)
+ */
+export function getGradientColor(t: number): string {
+  const clamped = Math.min(1, Math.max(0, t));
+
+  if (clamped <= 0.5) {
+    // De récent (0) vers milieu (0.5)
+    const localT = clamped / 0.5; // Normaliser à [0,1]
+    return interpolateColor(STATUS_COLORS.availableNewest, STATUS_COLORS.availableMiddle, localT);
+  } else {
+    // De milieu (0.5) vers très ancien (1)
+    const localT = (clamped - 0.5) / 0.5; // Normaliser à [0,1]
+    return interpolateColor(STATUS_COLORS.availableMiddle, STATUS_COLORS.availableOldest, localT);
+  }
+}
+
+/**
+ * Calcule le ratio [0,1] basé sur daysSince
+ * - 0 = minDays (plus récent)
+ * - 1 = maxDays (plus ancien)
+ */
+export function computeDaysRatio(days: number, minDays: number, maxDays: number): number {
+  if (maxDays <= minDays) {
+    return 1; // Tous pareils → considérés comme très anciens
+  }
+  const t = (days - minDays) / (maxDays - minDays);
+  return Math.min(1, Math.max(0, t));
+}
+
+/**
+ * Retourne un style de territoire basé sur le statut et daysSince (gradient continu)
  */
 export function getStyleByStatus(
   status: 'available' | 'assigned' | 'unknown',
-  availabilityPriority?: 'high' | 'medium' | 'low'
+  daysSince?: number,
+  minDays?: number,
+  maxDays?: number
 ): TerritoryStyle {
   let color: string;
 
   if (status === 'assigned') {
     color = STATUS_COLORS.assigned; // Gris pour indisponible
   } else if (status === 'available') {
-    // Nuances de vert selon la priorité
-    switch (availabilityPriority) {
-      case 'high':
-        color = STATUS_COLORS.availableHigh; // Vert vif
-        break;
-      case 'medium':
-        color = STATUS_COLORS.availableMedium; // Vert moyen
-        break;
-      case 'low':
-        color = STATUS_COLORS.availableLow; // Gris-vert
-        break;
-      default:
-        color = STATUS_COLORS.availableHigh; // Par défaut très disponible
+    // Gradient de violet selon l'ancienneté
+    if (daysSince !== undefined && minDays !== undefined && maxDays !== undefined) {
+      const ratio = computeDaysRatio(daysSince, minDays, maxDays);
+      color = getGradientColor(ratio);
+    } else {
+      // Pas de date → milieu par défaut
+      color = STATUS_COLORS.availableMiddle;
     }
   } else {
     color = STATUS_COLORS.unknown; // Gris clair pour inconnu

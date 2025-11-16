@@ -42,6 +42,42 @@ export default function TerritoryLayer({
 
     console.log('✨ TerritoryLayer - Création des couches pour', territories.features.length, 'territoires');
 
+    // Calculer min/max days depuis le retour pour le gradient continu
+    const availableWithDays = territories.features
+      .map(f => (f.properties as EnrichedTerritoryProperties))
+      .filter(p => p.status === 'available' && p.daysSinceLastReturn !== undefined)
+      .map(p => p.daysSinceLastReturn!);
+
+    const minDays = availableWithDays.length > 0 ? Math.min(...availableWithDays) : 0;
+    const maxDays = availableWithDays.length > 0 ? Math.max(...availableWithDays) : 0;
+
+    console.log('🎨 Gradient range:', { minDays, maxDays, count: availableWithDays.length });
+
+    // Exemples de gradient (premiers et derniers)
+    const gradientExamples = territories.features
+      .map(f => (f.properties as EnrichedTerritoryProperties))
+      .filter(p => p.status === 'available' && p.daysSinceLastReturn !== undefined)
+      .sort((a, b) => (a.daysSinceLastReturn || 0) - (b.daysSinceLastReturn || 0))
+      .slice(0, 3)
+      .concat(
+        territories.features
+          .map(f => (f.properties as EnrichedTerritoryProperties))
+          .filter(p => p.status === 'available' && p.daysSinceLastReturn !== undefined)
+          .sort((a, b) => (b.daysSinceLastReturn || 0) - (a.daysSinceLastReturn || 0))
+          .slice(0, 3)
+      )
+      .map(p => {
+        const style = getStyleByStatus(p.status, p.daysSinceLastReturn, minDays, maxDays);
+        return {
+          code: p.code,
+          daysSince: p.daysSinceLastReturn,
+          ratio: maxDays > minDays ? ((p.daysSinceLastReturn || 0) - minDays) / (maxDays - minDays) : 1,
+          fillColor: style.fillColor,
+        };
+      });
+
+    console.log('🌈 Exemples gradient (3 plus récents + 3 plus anciens):', gradientExamples);
+
     // Créer un groupe de couches (featureGroup permet getBounds)
     const layerGroup = L.featureGroup().addTo(map);
     layerGroupRef.current = layerGroup;
@@ -58,10 +94,10 @@ export default function TerritoryLayer({
             return SELECTED_TERRITORY_STYLE;
           }
 
-          // Style selon le statut et la priorité (Sprint 2 - Google Sheets)
+          // Style selon le statut et le gradient continu (Sprint 2 - Google Sheets)
           const props = feature?.properties as Partial<EnrichedTerritoryProperties>;
           if (props?.status) {
-            return getStyleByStatus(props.status, props.availabilityPriority);
+            return getStyleByStatus(props.status, props.daysSinceLastReturn, minDays, maxDays);
           }
 
           // Fallback sur le style par défaut (Sprint 1)
@@ -76,7 +112,7 @@ export default function TerritoryLayer({
                 // Appliquer un hover qui garde la couleur de base mais augmente l'opacité
                 const props = feature.properties as Partial<EnrichedTerritoryProperties>;
                 if (props?.status) {
-                  const baseStyle = getStyleByStatus(props.status, props.availabilityPriority);
+                  const baseStyle = getStyleByStatus(props.status, props.daysSinceLastReturn, minDays, maxDays);
                   layer.setStyle({
                     ...baseStyle,
                     fillOpacity: 0.5,
@@ -90,10 +126,10 @@ export default function TerritoryLayer({
             mouseout: (e) => {
               const layer = e.target;
               if (!selectedTerritory || feature.properties?.name !== selectedTerritory.name) {
-                // Restaurer le style basé sur le statut et la priorité
+                // Restaurer le style basé sur le statut et le gradient
                 const props = feature.properties as Partial<EnrichedTerritoryProperties>;
                 if (props?.status) {
-                  layer.setStyle(getStyleByStatus(props.status, props.availabilityPriority));
+                  layer.setStyle(getStyleByStatus(props.status, props.daysSinceLastReturn, minDays, maxDays));
                 } else {
                   layer.setStyle(DEFAULT_TERRITORY_STYLE);
                 }
@@ -149,7 +185,16 @@ export default function TerritoryLayer({
 
   // Re-styler les couches quand le territoire sélectionné change
   useEffect(() => {
-    if (!layerGroupRef.current) return;
+    if (!layerGroupRef.current || !territories) return;
+
+    // Recalculer min/max days pour le gradient
+    const availableWithDays = territories.features
+      .map(f => (f.properties as EnrichedTerritoryProperties))
+      .filter(p => p.status === 'available' && p.daysSinceLastReturn !== undefined)
+      .map(p => p.daysSinceLastReturn!);
+
+    const minDays = availableWithDays.length > 0 ? Math.min(...availableWithDays) : 0;
+    const maxDays = availableWithDays.length > 0 ? Math.max(...availableWithDays) : 0;
 
     layerGroupRef.current.eachLayer((layer) => {
       if (layer instanceof L.GeoJSON) {
@@ -160,10 +205,10 @@ export default function TerritoryLayer({
               if (selectedTerritory && feature.properties.name === selectedTerritory.name) {
                 subLayer.setStyle(SELECTED_TERRITORY_STYLE);
               } else {
-                // Utiliser le style basé sur le statut et la priorité (Sprint 2)
+                // Utiliser le style basé sur le statut et le gradient (Sprint 2)
                 const props = feature.properties as Partial<EnrichedTerritoryProperties>;
                 if (props?.status) {
-                  subLayer.setStyle(getStyleByStatus(props.status, props.availabilityPriority));
+                  subLayer.setStyle(getStyleByStatus(props.status, props.daysSinceLastReturn, minDays, maxDays));
                 } else {
                   subLayer.setStyle(DEFAULT_TERRITORY_STYLE);
                 }
@@ -173,7 +218,7 @@ export default function TerritoryLayer({
         });
       }
     });
-  }, [selectedTerritory]);
+  }, [selectedTerritory, territories]);
 
   return null; // Ce composant ne rend rien visuellement
 }
