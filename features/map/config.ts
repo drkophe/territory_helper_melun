@@ -50,8 +50,8 @@ export const STATUS_COLORS = {
   assigned: '#808080',           // Gris - Indisponible (attribué)
   unknown: '#CCCCCC',            // Gris clair - Inconnu
   // Gradient de violets pour les disponibles (du plus récent au plus ancien)
-  availableNewest: '#D78FEE',    // 0% - Rendu récemment (moins prioritaire)
-  availableMiddle: '#9B5DE0',    // 50% - Milieu
+  availableNewest: '#FDCFFA',    // 0% - Rendu récemment (moins prioritaire)
+  availableMiddle: '#D78FEE',    // 50% - Milieu
   availableOldest: '#4E56C0',    // 100% - Très ancien (très prioritaire)
 } as const;
 
