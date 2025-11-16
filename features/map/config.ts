@@ -45,17 +45,48 @@ export const SELECTED_TERRITORY_STYLE: TerritoryStyle = {
 };
 
 // Couleurs par statut (Sprint 2 - Google Sheets)
+// Nouvelle logique métier :
+// - assigned (indisponible) = gris
+// - available = vert avec nuances selon priorité
 export const STATUS_COLORS = {
-  available: '#22c55e',    // Vert - Disponible
-  assigned: '#f59e0b',     // Orange - Attribué
-  unknown: '#6b7280',      // Gris - Inconnu
+  assigned: '#6b7280',           // Gris - Indisponible (attribué)
+  unknown: '#94a3b8',            // Gris clair - Inconnu
+  // Nuances de vert pour les disponibles selon priorité
+  availableHigh: '#22c55e',      // Vert vif - Très disponible (>365j ou jamais sorti)
+  availableMedium: '#84cc16',    // Vert moyen - Moyennement disponible (180-365j)
+  availableLow: '#a3a3a3',       // Gris-vert - Peu disponible (<180j, sorti récemment)
 } as const;
 
 /**
- * Retourne un style de territoire en fonction de son statut
+ * Retourne un style de territoire en fonction de son statut et de sa priorité
  */
-export function getStyleByStatus(status: 'available' | 'assigned' | 'unknown'): TerritoryStyle {
-  const color = STATUS_COLORS[status];
+export function getStyleByStatus(
+  status: 'available' | 'assigned' | 'unknown',
+  availabilityPriority?: 'high' | 'medium' | 'low'
+): TerritoryStyle {
+  let color: string;
+
+  if (status === 'assigned') {
+    color = STATUS_COLORS.assigned; // Gris pour indisponible
+  } else if (status === 'available') {
+    // Nuances de vert selon la priorité
+    switch (availabilityPriority) {
+      case 'high':
+        color = STATUS_COLORS.availableHigh; // Vert vif
+        break;
+      case 'medium':
+        color = STATUS_COLORS.availableMedium; // Vert moyen
+        break;
+      case 'low':
+        color = STATUS_COLORS.availableLow; // Gris-vert
+        break;
+      default:
+        color = STATUS_COLORS.availableHigh; // Par défaut très disponible
+    }
+  } else {
+    color = STATUS_COLORS.unknown; // Gris clair pour inconnu
+  }
+
   return {
     color,
     fillColor: color,

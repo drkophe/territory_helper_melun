@@ -4,7 +4,7 @@
  */
 
 import type { TerritoryCollection, TerritoryFeature, EnrichedTerritoryProperties, TerritorySheetRow } from './types';
-import { computeTerritoryStatus } from './status';
+import { computeTerritoryStatus, computeAvailabilityPriority, computeDaysSinceLastReturn, type AvailabilityPriority } from './status';
 import { normalizeTerritoryCode } from '@/features/google-sheets/normalization';
 
 /**
@@ -49,12 +49,23 @@ export function enrichTerritoriesWithSheets(
       // Territoire trouvé dans Sheets : enrichir avec toutes les données
       const status = computeTerritoryStatus(sheetData);
 
+      // Calculer la priorité et les jours depuis le retour pour les territoires disponibles
+      let daysSinceLastReturn: number | undefined;
+      let availabilityPriority: AvailabilityPriority | undefined;
+
+      if (status === 'available') {
+        daysSinceLastReturn = computeDaysSinceLastReturn(sheetData);
+        availabilityPriority = computeAvailabilityPriority(sheetData);
+      }
+
       const enrichedProperties: EnrichedTerritoryProperties = {
         ...feature.properties,
         ...sheetData,
         status,
         code: normalizedCode, // Utiliser le code normalisé
         city: sheetData.city,
+        daysSinceLastReturn,
+        availabilityPriority,
       };
 
       return {
@@ -79,6 +90,58 @@ export function enrichTerritoriesWithSheets(
   });
 
   console.log(`✅ Merger: ${matchCount}/${kmlCollection.features.length} territoires matchés avec Sheets`);
+
+  // Statistiques par statut
+  const byStatus = {
+    assigned: enrichedFeatures.filter((f) => (f.properties as EnrichedTerritoryProperties).status === 'assigned').length,
+    available: enrichedFeatures.filter((f) => (f.properties as EnrichedTerritoryProperties).status === 'available').length,
+    unknown: enrichedFeatures.filter((f) => (f.properties as EnrichedTerritoryProperties).status === 'unknown').length,
+  };
+  console.log('📊 Répartition par statut:', byStatus);
+
+  // Exemples de territoires assigned (indisponibles)
+  const assignedSamples = enrichedFeatures
+    .filter((f) => (f.properties as EnrichedTerritoryProperties).status === 'assigned')
+    .slice(0, 5)
+    .map((f) => {
+      const props = f.properties as EnrichedTerritoryProperties;
+      return {
+        code: props.code,
+        fullName: props.fullName,
+        givenAt: props.givenAt,
+        returnedAt: props.returnedAt,
+      };
+    });
+
+  if (assignedSamples.length > 0) {
+    console.log('🔴 Exemples de territoires INDISPONIBLES (assigned) - 5 premiers:', assignedSamples);
+  }
+
+  // Exemples de territoires available avec priorités
+  const availableSamples = enrichedFeatures
+    .filter((f) => (f.properties as EnrichedTerritoryProperties).status === 'available')
+    .slice(0, 10)
+    .map((f) => {
+      const props = f.properties as EnrichedTerritoryProperties;
+      return {
+        code: props.code,
+        returnedAt: props.returnedAt,
+        daysSince: props.daysSinceLastReturn,
+        priority: props.availabilityPriority,
+      };
+    });
+
+  if (availableSamples.length > 0) {
+    console.log('🟢 Exemples de territoires DISPONIBLES (available) - 10 premiers:', availableSamples);
+  }
+
+  // Répartition par priorité pour les disponibles
+  const byPriority = {
+    high: enrichedFeatures.filter((f) => (f.properties as EnrichedTerritoryProperties).availabilityPriority === 'high').length,
+    medium: enrichedFeatures.filter((f) => (f.properties as EnrichedTerritoryProperties).availabilityPriority === 'medium').length,
+    low: enrichedFeatures.filter((f) => (f.properties as EnrichedTerritoryProperties).availabilityPriority === 'low').length,
+  };
+  console.log('🎯 Répartition des disponibles par priorité:', byPriority);
 
   // Afficher quelques exemples de non-matchés pour diagnostic
   const unmatched = enrichedFeatures

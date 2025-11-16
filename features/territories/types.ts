@@ -3,6 +3,7 @@
  */
 
 import type { Feature, Polygon, MultiPolygon, FeatureCollection } from 'geojson';
+import type { AvailabilityPriority } from './status';
 
 // Statut métier d'un territoire
 export type TerritoryStatus = 'available' | 'assigned' | 'unknown';
@@ -34,11 +35,14 @@ export interface BaseTerritoryProperties {
   [key: string]: unknown;    // Autres propriétés KML
 }
 
-// Propriétés enrichies d'un territoire (KML + Sheets + statut)
+// Propriétés enrichies d'un territoire (KML + Sheets + statut + priorité)
 export interface EnrichedTerritoryProperties extends BaseTerritoryProperties, Partial<TerritorySheetRow> {
   status: TerritoryStatus;
   code: string;
   city: string;
+  // Propriétés de priorité (uniquement pour les territoires disponibles)
+  daysSinceLastReturn?: number;
+  availabilityPriority?: AvailabilityPriority;
 }
 
 // Feature GeoJSON d'un territoire (compatible Sprint 1 ET Sprint 2)
