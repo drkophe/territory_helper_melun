@@ -8,8 +8,9 @@ import { DAYS_2_MONTHS, DAYS_4_MONTHS, DAYS_6_MONTHS, DAYS_8_MONTHS, DAYS_10_MON
 
 /**
  * Code normalisé du territoire représentant la limite globale
+ * Note: Les parenthèses sont conservées par normalizeTerritoryCode()
  */
-const BOUNDARY_CODE = '770131MELUN';
+const BOUNDARY_CODE = '(770131)MELUN';
 
 /**
  * Filtre par statut (disponible/attribué/tous)
@@ -67,6 +68,12 @@ export function matchesBoundaryFilter(
   hideBoundary: boolean
 ): boolean {
   if (!hideBoundary) return true;
+
+  // Log pour diagnostic (désactiver en production)
+  if (props.code === BOUNDARY_CODE) {
+    console.log('🚧 Territoire limite détecté:', { code: props.code, hideBoundary, filtered: true });
+  }
+
   return props.code !== BOUNDARY_CODE;
 }
 
