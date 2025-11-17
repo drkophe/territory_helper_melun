@@ -6,11 +6,13 @@
 
 import type { SelectedTerritory, EnrichedTerritoryProperties } from '../types';
 import { STATUS_COLORS } from '@/features/map/config';
+import TerritoryActions from './TerritoryActions';
 
 interface TerritoryInfoPanelProps {
   territory: SelectedTerritory | null;
   onClose: () => void;
   onHide?: (territoryName: string) => void;
+  onTerritoryUpdated?: (territory: EnrichedTerritoryProperties) => void;
 }
 
 // Helper pour obtenir le label du statut
@@ -41,7 +43,7 @@ function getStatusBadgeClasses(status?: string): string {
   }
 }
 
-export default function TerritoryInfoPanel({ territory, onClose, onHide }: TerritoryInfoPanelProps) {
+export default function TerritoryInfoPanel({ territory, onClose, onHide, onTerritoryUpdated }: TerritoryInfoPanelProps) {
   if (!territory) return null;
 
   // Typer les propriétés enrichies si disponibles
@@ -51,6 +53,12 @@ export default function TerritoryInfoPanel({ territory, onClose, onHide }: Terri
     if (onHide) {
       onHide(territory.name);
       onClose();
+    }
+  };
+
+  const handleTerritoryUpdated = (updatedTerritory: EnrichedTerritoryProperties) => {
+    if (onTerritoryUpdated) {
+      onTerritoryUpdated(updatedTerritory);
     }
   };
 
@@ -250,8 +258,16 @@ export default function TerritoryInfoPanel({ territory, onClose, onHide }: Terri
             </div>
           )}
 
-          {/* Actions */}
+          {/* Actions (Sprint 3 - Écriture) */}
           <div className="space-y-3">
+            {/* Actions d'attribution / retour */}
+            {enrichedProps.code && (
+              <TerritoryActions
+                territory={enrichedProps as EnrichedTerritoryProperties}
+                onTerritoryUpdated={handleTerritoryUpdated}
+              />
+            )}
+
             {/* Action de masquage */}
             {onHide && (
               <button
@@ -264,20 +280,6 @@ export default function TerritoryInfoPanel({ territory, onClose, onHide }: Terri
                 Masquer ce territoire
               </button>
             )}
-
-            {/* Actions futures */}
-            <button
-              disabled
-              className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed"
-            >
-              Attribuer à une personne
-            </button>
-            <button
-              disabled
-              className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed"
-            >
-              Marquer comme rendu
-            </button>
           </div>
         </div>
       </div>

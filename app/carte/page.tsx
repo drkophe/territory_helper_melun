@@ -118,6 +118,42 @@ export default function CartePage() {
     });
   };
 
+  // Mettre à jour un territoire après une action (attribution/retour)
+  const handleTerritoryUpdated = (updatedTerritory: any) => {
+    console.log('🔄 Mise à jour du territoire:', updatedTerritory.code);
+
+    setTerritories(prev => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        features: prev.features.map(f => {
+          if (f.properties.code === updatedTerritory.code) {
+            return {
+              ...f,
+              properties: {
+                ...f.properties,
+                ...updatedTerritory,
+              },
+            };
+          }
+          return f;
+        }),
+      };
+    });
+
+    // Mettre à jour aussi le territoire sélectionné si c'est celui-ci
+    if (selectedTerritory && (selectedTerritory.properties as any).code === updatedTerritory.code) {
+      setSelectedTerritory({
+        ...selectedTerritory,
+        properties: {
+          ...selectedTerritory.properties,
+          ...updatedTerritory,
+        },
+      });
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -218,6 +254,7 @@ export default function CartePage() {
               territory={selectedTerritory}
               onClose={handleClosePanel}
               onHide={handleHideTerritory}
+              onTerritoryUpdated={handleTerritoryUpdated}
             />
           </>
         )}
